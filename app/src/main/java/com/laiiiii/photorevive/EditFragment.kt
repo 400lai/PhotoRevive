@@ -44,6 +44,44 @@ class EditFragment : Fragment() {
         Snackbar.make(requireView(), message, Snackbar.LENGTH_SHORT).show()
     }
 
+    private fun setupQuickEntryClicks(view: View) {
+        val liveCard = view.findViewById<View>(R.id.card_live)
+        val aiFaceCard = view.findViewById<View>(R.id.card_ai_face)
+        val puzzleCard = view.findViewById<View>(R.id.card_puzzle)
+
+        liveCard.setOnClickListener {
+            showSnackbar("点击了：修实况Live")
+        }
+
+        aiFaceCard.setOnClickListener {
+            showSnackbar("你点击了：AI修人像")
+        }
+
+        puzzleCard.setOnClickListener {
+            showSnackbar("你点击了：拼图")
+        }
+
+        // 区域4 的八个按钮
+        val batchEdit = view.findViewById<View>(R.id.card_batch_edit)
+        val hd = view.findViewById<View>(R.id.card_hd)
+        val magicRemove = view.findViewById<View>(R.id.card_magic_remove)
+        val smartCutout = view.findViewById<View>(R.id.card_smart_cutout)
+        val aiEdit = view.findViewById<View>(R.id.card_ai_edit)
+        val faceSlender = view.findViewById<View>(R.id.card_face_slender)
+        val autoBody = view.findViewById<View>(R.id.card_auto_body)
+        val allTools = view.findViewById<View>(R.id.card_all_tools)
+
+        batchEdit.setOnClickListener { showSnackbar("你点击了：批量修图") }
+        hd.setOnClickListener { showSnackbar("你点击了：画质超清") }
+        magicRemove.setOnClickListener { showSnackbar("你点击了：魔法消除") }
+        smartCutout.setOnClickListener { showSnackbar("你点击了：智能抠图") }
+        aiEdit.setOnClickListener { showSnackbar("你点击了：AI修图") }
+        faceSlender.setOnClickListener { showSnackbar("你点击了：瘦脸瘦身") }
+        autoBody.setOnClickListener { showSnackbar( "你点击了：自动美体") }
+        allTools.setOnClickListener { showSnackbar("你点击了：所有工具") }
+
+    }
+
     // 自动轮播的任务（每 3 秒执行一次）
     private val autoSlideRunnable = object : Runnable {
         override fun run() {
@@ -79,21 +117,6 @@ class EditFragment : Fragment() {
         // 创建底部的小圆点指示器
         createIndicators()
 
-        // 区域二_新增：绑定按钮
-        btnImportPhoto = binding.btnImportPhoto
-        btnCamera = binding.btnCamera
-
-        // 设置点击事件（可暂用 Toast 测试）
-        btnImportPhoto.setOnClickListener {
-            // TODO: 打开相册选择图片
-            showSnackbar("点击了「导入照片」")
-        }
-
-        btnCamera.setOnClickListener {
-            // TODO: 打开相机
-            showSnackbar("点击了「相机」")
-        }
-
         // 监听页面滑动变化（用于更新小圆点 & 判断是否空闲）
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             // 当滑到某一页时，更新小圆点状态
@@ -112,6 +135,24 @@ class EditFragment : Fragment() {
 
         // 启动自动轮播
         startAutoSlide()
+
+        // 区域二_新增：绑定按钮
+        btnImportPhoto = binding.btnImportPhoto
+        btnCamera = binding.btnCamera
+
+        // 设置点击事件（可暂用 Toast 测试）
+        btnImportPhoto.setOnClickListener {
+            // TODO: 打开相册选择图片
+            showSnackbar("点击了「导入照片」")
+        }
+
+        btnCamera.setOnClickListener {
+            // TODO: 打开相机
+            showSnackbar("点击了「相机」")
+        }
+
+        // 区域3_新增： 按钮点击监听
+        setupQuickEntryClicks(view)
     }
 
     // 创建小圆点指示器：圆点数量 = 轮播图数量
