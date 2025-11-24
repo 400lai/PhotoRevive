@@ -11,6 +11,8 @@ import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import com.laiiiii.photorevive.databinding.FragmentEditBinding
 
@@ -34,6 +36,13 @@ class EditFragment : Fragment() {
 
     // 自动轮播需要的 Handler（Android 里的计时器）
     private val handler = Handler(Looper.getMainLooper())
+
+    private lateinit var btnImportPhoto: MaterialButton
+    private lateinit var btnCamera: MaterialButton
+
+    private fun showSnackbar(message: String) {
+        Snackbar.make(requireView(), message, Snackbar.LENGTH_SHORT).show()
+    }
 
     // 自动轮播的任务（每 3 秒执行一次）
     private val autoSlideRunnable = object : Runnable {
@@ -69,6 +78,21 @@ class EditFragment : Fragment() {
 
         // 创建底部的小圆点指示器
         createIndicators()
+
+        // 区域二_新增：绑定按钮
+        btnImportPhoto = binding.btnImportPhoto
+        btnCamera = binding.btnCamera
+
+        // 设置点击事件（可暂用 Toast 测试）
+        btnImportPhoto.setOnClickListener {
+            // TODO: 打开相册选择图片
+            showSnackbar("点击了「导入照片」")
+        }
+
+        btnCamera.setOnClickListener {
+            // TODO: 打开相机
+            showSnackbar("点击了「相机」")
+        }
 
         // 监听页面滑动变化（用于更新小圆点 & 判断是否空闲）
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
