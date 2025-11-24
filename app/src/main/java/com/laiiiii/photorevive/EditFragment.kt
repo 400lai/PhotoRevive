@@ -24,13 +24,18 @@ class EditFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var viewPager: ViewPager2
+    // 声明一个小圆点指示器容器
     private lateinit var indicatorContainer: LinearLayout
+    // ViewPager 的 Adapter，用来提供每一页（BannerFragment）
     private lateinit var bannerAdapter: BannerAdapter
 
-    // 用于记录 ViewPager2 是否处于 Idle/空闲 状态
+    // 用于记录 ViewPager2 是否处于 Idle/空闲 状态，避免和手动滑动冲突
     private var isViewPagerIdle = true
 
+    // 自动轮播需要的 Handler（Android 里的计时器）
     private val handler = Handler(Looper.getMainLooper())
+
+    // 自动轮播的任务（每 3 秒执行一次）
     private val autoSlideRunnable = object : Runnable {
         override fun run() {
             // 仅在 ViewPager 空闲时才翻页，防止跳帧
@@ -47,6 +52,7 @@ class EditFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        // 使用 ViewBinding 加载 fragment_edit.xml
         _binding = FragmentEditBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -57,20 +63,22 @@ class EditFragment : Fragment() {
         viewPager = binding.viewPagerBanner
         indicatorContainer = binding.indicatorContainer
 
-        // 传入 this
+        // 初始化 Adapter，告诉 ViewPager2 总共有多少 Banner
         bannerAdapter = BannerAdapter(this)
         viewPager.adapter = bannerAdapter
 
-        // 创建指示器
+        // 创建底部的小圆点指示器
         createIndicators()
 
-        // 监听页面切换
+        // 监听页面滑动变化（用于更新小圆点 & 判断是否空闲）
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            // 当滑到某一页时，更新小圆点状态
             override fun onPageSelected(position: Int) {
                 updateIndicators(position)
                 super.onPageSelected(position)
             }
 
+            // 监听滑动状态（是否处于空闲）
             override fun onPageScrollStateChanged(state: Int) {
                 super.onPageScrollStateChanged(state)
                 // 更新空闲状态：SCROLL_STATE_IDLE = 0
@@ -82,55 +90,67 @@ class EditFragment : Fragment() {
         startAutoSlide()
     }
 
+    // 创建小圆点指示器：圆点数量 = 轮播图数量
     private fun createIndicators() {
         indicatorContainer.removeAllViews()
         for (i in 0 until BANNER_COUNT) {
             val dot = View(context)
-            val size = 8.dpToPx()
-            val margin = 4.dpToPx()
+
+            val size = 8.dpToPx()     // 圆点大小
+            val margin = 4.dpToPx()   // 圆点之间的间距
+
+            // 设置圆点的布局属性
             val params = LinearLayout.LayoutParams(size, size).apply {
                 setMargins(margin, 0, margin, 0)
             }
             dot.layoutParams = params
+            // 默认使用未选中的圆点背景
             dot.setBackgroundResource(R.drawable.shape_indicator_dot)
             indicatorContainer.addView(dot)
         }
-        updateIndicators(0)
+        updateIndicators(0)     // 第一个圆点设为选中状态
     }
 
+    // 更新小圆点显示：选中某个圆点（当前页亮起）
     private fun updateIndicators(selectedIndex: Int) {
         for (i in 0 until indicatorContainer.childCount) {
             val isSelected = i == selectedIndex
+
             indicatorContainer.getChildAt(i).setBackgroundResource(
-                if (isSelected) R.drawable.shape_indicator_dot_selected
-                else R.drawable.shape_indicator_dot
+                if (isSelected)
+                    R.drawable.shape_indicator_dot_selected // 选中的圆点
+                else
+                    R.drawable.shape_indicator_dot          // 普通圆点
             )
         }
     }
 
+    // 启动自动轮播（3 秒切下一页）
     private fun startAutoSlide() {
         handler.postDelayed(autoSlideRunnable, 3000)
     }
 
+    // 停止自动轮播（退出页面时调用）
     private fun stopAutoSlide() {
         handler.removeCallbacks(autoSlideRunnable)
     }
 
     override fun onResume() {
         super.onResume()
-        startAutoSlide()
+        startAutoSlide()    // 页面重新可见时重启轮播
     }
 
     override fun onPause() {
         super.onPause()
-        stopAutoSlide()
+        stopAutoSlide()    // 页面不可见时暂停轮播（省电 & 防止后台乱切页）
     }
 
-    // dp 转 px 扩展函数
+    // dp 转 px 扩展函数（Android 必备工具函数）
     private fun Int.dpToPx(): Int {
         return (this * resources.displayMetrics.density).toInt()
     }
 
+    // 当视图销毁时，解除绑定，防止内存泄漏
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
