@@ -143,7 +143,11 @@ class EditFragment : Fragment() {
         // 设置点击事件（可暂用 Toast 测试）
         btnImportPhoto.setOnClickListener {
             // TODO: 打开相册选择图片
-            showSnackbar("点击了「导入照片」")
+            val albumFragment = AlbumFragment()
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, albumFragment)
+                .addToBackStack(null) // 关键：允许返回
+                .commit()
         }
 
         btnCamera.setOnClickListener {
