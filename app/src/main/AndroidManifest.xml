@@ -20,8 +20,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".SplashActivity"
+        <activity android:name=".activity.SplashActivity"
             android:exported="true"/>
+        <activity
+            android:name=".activity.AlbumActivity"
+            android:exported="false" />
     </application>
 
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />

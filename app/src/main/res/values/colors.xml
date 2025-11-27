@@ -5,5 +5,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="purple_500">#6200EE</color>
+    <color name="orange">#f4612d</color>
+    <color name="darkGrey">#707070</color>
 
 </resources>

@@ -1,10 +1,12 @@
-package com.laiiiii.photorevive
+package com.laiiiii.photorevive.activity
 
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
+import com.laiiiii.photorevive.MainActivity
+import com.laiiiii.photorevive.R
 
 class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
