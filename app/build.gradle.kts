@@ -43,7 +43,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -52,10 +51,17 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // ViewPager2
     implementation("androidx.viewpager2:viewpager2:1.1.0")
+
+    // Material Design
     implementation("com.google.android.material:material:1.12.0")
 
-    // ⭐ Glide 依赖
+    // ✅ 正确添加 Glide（无需 kapt）
     implementation("com.github.bumptech.glide:glide:4.16.0")
-    kapt("com.github.bumptech.glide:compiler:4.16.0")
+
+    // ✅ 添加 ViewModel & LiveData（MVVM 所需）
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.4")
 }

@@ -1,10 +1,11 @@
-package com.laiiiii.photorevive
+package com.laiiiii.photorevive.ui.home
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.laiiiii.photorevive.R
 
 class MineFragment : Fragment() {
     override fun onCreateView(

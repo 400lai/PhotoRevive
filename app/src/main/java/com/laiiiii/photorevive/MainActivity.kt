@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.laiiiii.photorevive.ui.home.EditFragment
+import com.laiiiii.photorevive.ui.home.InspirationFragment
+import com.laiiiii.photorevive.ui.home.MineFragment
 
 class MainActivity : AppCompatActivity() {
 
