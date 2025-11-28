@@ -3,7 +3,9 @@ package com.laiiiii.photorevive.activity
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.opengl.GLSurfaceView
+import android.os.Build
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.laiiiii.photorevive.databinding.ActivityEditorBinding
 import com.laiiiii.photorevive.ui.editor.ImageRenderer
@@ -14,8 +16,12 @@ class EditorActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityEditorBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // 隐藏系统状态栏（移到 setContentView 之后）
+        hideSystemUI()
 
         // 设置关闭按钮的点击监听器
         binding.btnClose.setOnClickListener {
@@ -38,6 +44,39 @@ class EditorActivity : AppCompatActivity() {
                 binding.glSurfaceView.setRenderer(renderer)
                 binding.glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
             }
+        }
+    }
+
+
+    /**
+     * 根据不同的 Android 版本隐藏系统 UI。
+     */
+    private fun hideSystemUI() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // 使用 WindowInsetsController API（Android 11+）
+            window.insetsController?.apply {
+                hide(android.view.WindowInsets.Type.systemBars())
+                systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            // 使用旧版 API（Android 10 及以下）
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            or View.SYSTEM_UI_FLAG_FULLSCREEN
+                            or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    )
+        }
+    }
+
+    // 当用户交互时保持隐藏状态
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            hideSystemUI()
         }
     }
 }
