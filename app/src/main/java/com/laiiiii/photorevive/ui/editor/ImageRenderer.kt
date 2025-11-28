@@ -1,3 +1,4 @@
+// ui/editor/ImageRenderer.kt
 package com.laiiiii.photorevive.ui.editor
 
 import android.graphics.Bitmap
@@ -10,6 +11,7 @@ import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import com.laiiiii.photorevive.ui.editor.model.TransformState
 
 class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
     private var program = 0
@@ -53,6 +55,12 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
         1f, 1f   // 右下
     )
 
+    // 变换状态
+    private var transformState = TransformState.DEFAULT
+    private var viewWidth = 0
+    private var viewHeight = 0
+    private var initialScale = 1.0f
+
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
 
@@ -90,6 +98,16 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
+
+        viewWidth = width
+        viewHeight = height
+
+        // 计算centerInside效果的初始缩放
+        val bitmapWidth = bitmap.width.toFloat()
+        val bitmapHeight = bitmap.height.toFloat()
+        val widthScale = viewWidth.toFloat() / bitmapWidth
+        val heightScale = viewHeight.toFloat() / bitmapHeight
+        initialScale = minOf(widthScale, heightScale, 1.0f)
 
         // 计算centerInside效果的顶点坐标
         calculateCenterInsideVertices(width, height)
@@ -141,6 +159,46 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
 
         GLES20.glDisableVertexAttribArray(positionHandle)
         GLES20.glDisableVertexAttribArray(texCoordHandle)
+    }
+
+    fun updateTransform(transformState: TransformState) {
+        this.transformState = transformState
+        // 根据 transformState 更新顶点坐标实现平移和缩放
+        updateVerticesWithTransform()
+    }
+
+    private fun updateVerticesWithTransform() {
+        val bitmapWidth = bitmap.width.toFloat()
+        val bitmapHeight = bitmap.height.toFloat()
+
+        // 计算当前缩放因子
+        val currentScaleX = initialScale * transformState.scaleX
+        val currentScaleY = initialScale * transformState.scaleY
+
+        // 计算实际显示尺寸
+        val displayWidth = bitmapWidth * currentScaleX
+        val displayHeight = bitmapHeight * currentScaleY
+
+        // 计算在标准化设备坐标系中的位置(-1 to 1)
+        val normalizedWidth = displayWidth / viewWidth
+        val normalizedHeight = displayHeight / viewHeight
+
+        // 计算平移偏移 (将像素偏移转换为标准化设备坐标)
+        val translateXNormalized = (transformState.translateX * 2.0f) / viewWidth
+        val translateYNormalized = (transformState.translateY * 2.0f) / viewHeight
+
+        // 更新顶点坐标数组，应用平移和缩放
+        displayVertices = floatArrayOf(
+            -normalizedWidth + translateXNormalized, normalizedHeight - translateYNormalized,   // 左上
+            -normalizedWidth + translateXNormalized, -normalizedHeight - translateYNormalized,  // 左下
+            normalizedWidth + translateXNormalized, normalizedHeight - translateYNormalized,    // 右上
+            normalizedWidth + translateXNormalized, -normalizedHeight - translateYNormalized    // 右下
+        )
+
+        // 更新顶点缓冲区
+        vertexBuffer.clear()
+        vertexBuffer.put(displayVertices)
+        vertexBuffer.position(0)
     }
 
     private fun calculateCenterInsideVertices(viewWidth: Int, viewHeight: Int) {

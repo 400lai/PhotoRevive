@@ -1,18 +1,29 @@
+// activity/EditorActivity.kt (保持不变)
 package com.laiiiii.photorevive.activity
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.opengl.GLSurfaceView
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import com.laiiiii.photorevive.databinding.ActivityEditorBinding
+import com.laiiiii.photorevive.ui.editor.EditorTouchListener
+import com.laiiiii.photorevive.ui.editor.EditorViewModel
+import com.laiiiii.photorevive.ui.editor.ExportState
 import com.laiiiii.photorevive.ui.editor.ImageRenderer
 import java.io.InputStream
 
 class EditorActivity : AppCompatActivity() {
     private lateinit var binding: ActivityEditorBinding
+    private lateinit var viewModel: EditorViewModel
+    private var currentBitmap: Bitmap? = null
+    private var imageRenderer: ImageRenderer? = null
+    private lateinit var touchListener: EditorTouchListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,12 +31,51 @@ class EditorActivity : AppCompatActivity() {
         binding = ActivityEditorBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // 初始化 ViewModel
+        viewModel = ViewModelProvider(this)[EditorViewModel::class.java]
+
+        // 观察导出状态
+        viewModel.exportState.observe(this) { state ->
+            when (state) {
+                is ExportState.Loading -> {
+                    // 显示加载状态
+                    binding.btnExport.text = "导出中..."
+                    binding.btnExport.isEnabled = false
+                }
+                is ExportState.Success -> {
+                    // 导出成功
+                    binding.btnExport.text = "导出"
+                    binding.btnExport.isEnabled = true
+                    Toast.makeText(this, "图片已保存到相册", Toast.LENGTH_SHORT).show()
+                }
+                is ExportState.Error -> {
+                    // 导出失败
+                    binding.btnExport.text = "导出"
+                    binding.btnExport.isEnabled = true
+                    Toast.makeText(this, "导出失败: ${state.message}", Toast.LENGTH_SHORT).show()
+                }
+                is ExportState.Idle -> {
+                    binding.btnExport.text = "导出"
+                    binding.btnExport.isEnabled = true
+                }
+            }
+        }
+
         // 隐藏系统状态栏（移到 setContentView 之后）
         hideSystemUI()
 
         // 设置关闭按钮的点击监听器
         binding.btnClose.setOnClickListener {
             finish() // 关闭当前活动，返回到相册页
+        }
+
+        // 设置导出按钮的点击监听器
+        binding.btnExport.setOnClickListener {
+            currentBitmap?.let { bitmap ->
+                viewModel.exportImage(bitmap)
+            } ?: run {
+                Toast.makeText(this, "图片尚未加载完成", Toast.LENGTH_SHORT).show()
+            }
         }
 
         // 获取传递过来的图片 URI
@@ -39,14 +89,28 @@ class EditorActivity : AppCompatActivity() {
             inputStream?.close()
 
             if (bitmap != null) {
+                currentBitmap = bitmap
                 // 设置渲染器
-                val renderer = ImageRenderer(bitmap)
-                binding.glSurfaceView.setRenderer(renderer)
+                imageRenderer = ImageRenderer(bitmap)
+                binding.glSurfaceView.setRenderer(imageRenderer)
                 binding.glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
+
+                // 初始化手势检测器
+                initGestureDetectors()
             }
         }
     }
 
+    private fun initGestureDetectors() {
+        touchListener = EditorTouchListener { transformState ->
+            // 更新渲染器中的变换状态
+            imageRenderer?.updateTransform(transformState)
+            binding.glSurfaceView.requestRender()
+        }
+
+        // 设置触摸监听器
+        binding.glSurfaceView.setEditorTouchListener(touchListener)
+    }
 
     /**
      * 根据不同的 Android 版本隐藏系统 UI。
