@@ -1,6 +1,7 @@
 package com.laiiiii.photorevive.activity
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -60,13 +61,23 @@ class AlbumActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener { finish() }
     }
 
+    // activity/AlbumActivity.kt
     private fun setupRecyclerView() {
-        adapter = MediaItemAdapter(emptyList())
+        adapter = MediaItemAdapter(emptyList()) { mediaItem ->
+            // 点击图片项时启动 EditorActivity 并传递图片 URI
+            val intent = Intent(this, EditorActivity::class.java).apply {
+                putExtra("IMAGE_URI", mediaItem.uri)
+            }
+            startActivity(intent)
+        }
         binding.recyclerView.apply {
             layoutManager = GridLayoutManager(this@AlbumActivity, 3)
-            this.adapter = this@AlbumActivity.adapter
+            adapter = this@AlbumActivity.adapter
         }
     }
+
+
+
 
     private fun hasStoragePermission(): Boolean {
         return ContextCompat.checkSelfPermission(this, getRequiredPermission()) == PackageManager.PERMISSION_GRANTED

@@ -9,7 +9,8 @@ import com.laiiiii.photorevive.R
 import com.laiiiii.photorevive.ui.recyclerview.model.MediaItem
 import com.laiiiii.photorevive.ui.recyclerview.viewholder.AlbumViewHolder
 
-class MediaItemAdapter(private var items: List<MediaItem>) :
+// ui/recyclerview/adapter/MediaItemAdapter.kt
+class MediaItemAdapter(private var items: List<MediaItem>, private val onItemClick: (MediaItem) -> Unit) :
     RecyclerView.Adapter<AlbumViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlbumViewHolder {
@@ -27,6 +28,10 @@ class MediaItemAdapter(private var items: List<MediaItem>) :
             .placeholder(android.R.color.darker_gray)
             .error(android.R.drawable.ic_menu_gallery)
             .into(holder.imageView)
+
+        holder.itemView.setOnClickListener {
+            onItemClick(item)
+        }
     }
 
     fun updateItems(newItems: List<MediaItem>) {
