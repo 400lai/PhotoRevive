@@ -1,11 +1,9 @@
 package com.laiiiii.photorevive.ui.editor
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
-import android.opengl.Matrix
 import android.util.Log
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -18,6 +16,7 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
     private var textureId = -1
     private lateinit var vertexBuffer: FloatBuffer
     private lateinit var textureBuffer: FloatBuffer
+    private var displayVertices = FloatArray(8) // 用于存储调整后的顶点坐标
 
     private val vertexShaderCode = """
         attribute vec4 aPosition;
@@ -40,10 +39,10 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
 
     // 顶点坐标 (x, y)
     private val vertices = floatArrayOf(
-        -1f,  1f,  // 左上
+        -1f, 1f,   // 左上
         -1f, -1f,  // 左下
-        1f,  1f,  // 右上
-        1f, -1f   // 右下
+        1f, 1f,    // 右上
+        1f, -1f    // 右下
     )
 
     // 纹理坐标 (s, t)
@@ -57,7 +56,7 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
 
-        // 初始化顶点缓冲区
+        // 初始化默认顶点缓冲区
         vertexBuffer = ByteBuffer.allocateDirect(vertices.size * 4)
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer()
@@ -81,7 +80,7 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
             return
         }
 
-// 加载纹理
+        // 加载纹理
         textureId = loadTexture(bitmap)
         if (textureId == -1) {
             Log.e("ImageRenderer", "Failed to load texture")
@@ -91,6 +90,14 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
+
+        // 计算centerInside效果的顶点坐标
+        calculateCenterInsideVertices(width, height)
+
+        // 更新顶点缓冲区
+        vertexBuffer.clear()
+        vertexBuffer.put(displayVertices)
+        vertexBuffer.position(0)
     }
 
     override fun onDrawFrame(gl: GL10?) {
@@ -136,7 +143,35 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
         GLES20.glDisableVertexAttribArray(texCoordHandle)
     }
 
-    // ui/editor/ImageRenderer.kt
+    private fun calculateCenterInsideVertices(viewWidth: Int, viewHeight: Int) {
+        val bitmapWidth = bitmap.width.toFloat()
+        val bitmapHeight = bitmap.height.toFloat()
+
+        // 如果图片尺寸小于等于视图尺寸，则保持原大小居中显示
+        // 如果图片尺寸大于视图尺寸，则按比例缩小以完整显示
+        val widthScale = viewWidth.toFloat() / bitmapWidth
+        val heightScale = viewHeight.toFloat() / bitmapHeight
+
+        // 选择较小的缩放因子以确保整个图片都能显示在视图内
+        val scale = minOf(widthScale, heightScale, 1.0f)
+
+        // 计算实际显示尺寸
+        val displayWidth = bitmapWidth * scale
+        val displayHeight = bitmapHeight * scale
+
+        // 计算在标准化设备坐标系中的位置(-1 to 1)
+        val normalizedWidth = displayWidth / viewWidth
+        val normalizedHeight = displayHeight / viewHeight
+
+        // 更新顶点坐标数组以实现centerInside效果
+        displayVertices = floatArrayOf(
+            -normalizedWidth, normalizedHeight,   // 左上
+            -normalizedWidth, -normalizedHeight,  // 左下
+            normalizedWidth, normalizedHeight,    // 右上
+            normalizedWidth, -normalizedHeight    // 右下
+        )
+    }
+
     private fun loadShader(type: Int, shaderCode: String): Int {
         val shader = GLES20.glCreateShader(type)
         if (shader == 0) {
@@ -190,8 +225,6 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
         return program
     }
 
-
-    // ui/editor/ImageRenderer.kt
     private fun loadTexture(bitmap: Bitmap): Int {
         val textures = IntArray(1)
         GLES20.glGenTextures(1, textures, 0)
@@ -213,9 +246,9 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
 
         // 加载纹理
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
-        bitmap.recycle()
+        // 注意：这里不应该回收bitmap，因为它会在后续渲染中使用
+        // bitmap.recycle()
 
         return textureId
     }
-
 }

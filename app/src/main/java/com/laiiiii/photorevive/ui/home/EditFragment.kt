@@ -34,13 +34,13 @@ class EditFragment : Fragment() {
         bannerView.setupWithFragment(this)
         bannerView.startAutoSlide()
 
-        // 绑定按钮：启动 AlbumActivity
-        binding.btnImportPhoto.setOnClickListener {
+        // 绑定卡片：启动 AlbumActivity
+        binding.cardImportPhoto.setOnClickListener {
             val intent = Intent(requireContext(), AlbumActivity::class.java)
             startActivity(intent)
         }
 
-        binding.btnCamera.setOnClickListener {
+        binding.cardCamera.setOnClickListener {
             showSnackbar("点击了「相机」")
         }
 
