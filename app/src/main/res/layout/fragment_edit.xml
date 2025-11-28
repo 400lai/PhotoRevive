@@ -13,7 +13,7 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <!-- 导入照片卡片 -->
-        <androidx.cardview.widget.CardView
+        <com.laiiiii.photorevive.ui.custom.ShimmerCardView
             android:id="@+id/card_import_photo"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -36,7 +36,7 @@
                 <ImageView
                     android:layout_width="36dp"
                     android:layout_height="36dp"
-                    android:src="@drawable/func_icon1"
+                    android:src="@drawable/photo_import"
                     android:contentDescription="导入照片图标" />
 
                 <TextView
@@ -47,10 +47,10 @@
                     android:textColor="@color/white"
                     android:layout_marginTop="8dp" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.laiiiii.photorevive.ui.custom.ShimmerCardView>
 
         <!-- 相机卡片 -->
-        <androidx.cardview.widget.CardView
+        <com.laiiiii.photorevive.ui.custom.ShimmerCardView
             android:id="@+id/card_camera"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -73,7 +73,7 @@
                 <ImageView
                     android:layout_width="36dp"
                     android:layout_height="36dp"
-                    android:src="@drawable/func_icon1"
+                    android:src="@drawable/camera"
                     android:contentDescription="相机图标" />
 
                 <TextView
@@ -84,7 +84,7 @@
                     android:textColor="@color/black"
                     android:layout_marginTop="8dp" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.laiiiii.photorevive.ui.custom.ShimmerCardView>
 
 
         <!-- 区域3：功能快捷入口1 -->

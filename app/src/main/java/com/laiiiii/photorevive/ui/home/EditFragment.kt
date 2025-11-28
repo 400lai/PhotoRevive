@@ -1,3 +1,4 @@
+// file: EditFragment.kt
 package com.laiiiii.photorevive.ui.home
 
 import android.content.Intent
@@ -8,7 +9,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.google.android.material.snackbar.Snackbar
 import com.laiiiii.photorevive.R
-import com.laiiiii.photorevive.activity.AlbumActivity  // ✅ 新增导入
+import com.laiiiii.photorevive.activity.AlbumActivity
 import com.laiiiii.photorevive.databinding.FragmentEditBinding
 import com.laiiiii.photorevive.ui.slideshow.EditBannerView
 
