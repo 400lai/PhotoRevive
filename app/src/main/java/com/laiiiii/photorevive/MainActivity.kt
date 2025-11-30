@@ -36,6 +36,6 @@ class MainActivity : AppCompatActivity() {
     private fun loadFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, fragment)
-            .commit()
+            .commit()1
     }
 }
