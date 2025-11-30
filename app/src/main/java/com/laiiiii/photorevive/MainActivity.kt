@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
                 else -> EditFragment()
             }
             loadFragment(selectedFragment)
-            true1
+            true
         }
     }
 
