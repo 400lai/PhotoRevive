@@ -2,36 +2,52 @@ package com.laiiiii.photorevive
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.laiiiii.photorevive.ui.NavigationBottomBar
 import com.laiiiii.photorevive.ui.home.EditFragment
 import com.laiiiii.photorevive.ui.home.InspirationFragment
 import com.laiiiii.photorevive.ui.home.MineFragment
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var bottomNav: BottomNavigationView
+    private lateinit var bottomNav: ComposeView
+    private var currentSelectedItem = R.id.nav_edit
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        bottomNav = findViewById(R.id.bottom_navigation)
+        bottomNav = findViewById(R.id.compose_view)
 
-        // 默认显示“修图”页面
-        loadFragment(EditFragment())
+        // 默认加载 EditFragment
+        if (savedInstanceState == null) {
+            loadFragment(EditFragment())
+        }
 
-        bottomNav.setOnItemSelectedListener { item ->
-            val selectedFragment: Fragment = when (item.itemId) {
-                R.id.nav_edit -> EditFragment()
-                R.id.nav_inspiration -> InspirationFragment()
-                R.id.nav_mine -> MineFragment()
-                else -> EditFragment()
-            }
-            loadFragment(selectedFragment)
-            true
+        setupComposeBottomNavigation()
+    }
+
+    private fun setupComposeBottomNavigation() {
+        bottomNav.setContent {
+            NavigationBottomBar(
+                selectedItem = currentSelectedItem,
+                onItemSelected = { id ->
+                    if (currentSelectedItem != id) {
+                        currentSelectedItem = id  // 这一行会触发 Compose 重组
+                        val selectedFragment: Fragment = when (id) {
+                            R.id.nav_edit -> EditFragment()
+                            R.id.nav_inspiration -> InspirationFragment()
+                            R.id.nav_mine -> MineFragment()
+                            else -> EditFragment()
+                        }
+                        loadFragment(selectedFragment)
+                    }
+                }
+            )
         }
     }
+
 
     private fun loadFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
