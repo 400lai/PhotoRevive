@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PhotoRevive">
         <activity
-            android:name=".MainActivity"
+            android:name=".activity.SplashActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -20,13 +20,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".activity.SplashActivity"
+        <activity android:name=".MainActivity"
             android:exported="true"/>
         <activity
             android:name=".activity.AlbumActivity"
             android:exported="false" />
         <activity
             android:name=".activity.EditorActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.login.LoginActivity"
             android:exported="false" />
     </application>
 

@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-
 android {
     namespace = "com.laiiiii.photorevive"
     compileSdk = 36
@@ -36,11 +35,10 @@ android {
         jvmTarget = "11"
     }
     buildFeatures {
-        compose = true      // 启用 Compose 编译支持
+        compose = true
         viewBinding = true
         dataBinding = true
     }
-
 }
 
 dependencies {
@@ -53,26 +51,32 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    // ✅ Compose BOM（平台依赖）
+    // Compose BOM
     implementation(platform(libs.androidx.compose.bom))
 
-    // ✅ Compose 核心库（自动匹配 BOM 版本）
+    // Compose Core
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.foundation)          // ✅ 必需：LazyColumn, Image, Modifier 等
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.activity.compose) // 用于 setContent
-    implementation(libs.androidx.lifecycle.viewmodel.compose) // ViewModel + Compose
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    // ViewPager2
+    // Compose Navigation (if you use NavHost)
+    implementation(libs.androidx.navigation.compose)         // ✅ 替换原来的 navigation-runtime-android
+
+    // Lifecycle + Compose integration
+    implementation(libs.androidx.lifecycle.runtime.compose)  // ✅ 推荐
+
+    // ViewPager2 (View system, not Compose)
     implementation("androidx.viewpager2:viewpager2:1.1.0")
 
-    // ✅ 正确添加 Glide
+    // Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    // Compose 工具支持
+    // Compose Tooling (Preview + Debug)
     implementation(libs.androidx.compose.ui.tooling.preview)
-    debugImplementation("androidx.compose.ui:ui-tooling")
-
+    debugImplementation(libs.androidx.compose.ui.tooling)    // ✅ 正确写法
 }
