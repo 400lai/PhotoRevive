@@ -56,7 +56,8 @@ fun MineScreen(
     onLoginClick: () -> Unit,
     onSubscribeClick: () -> Unit,
     onCreateClick: () -> Unit,
-    onEditProfileClick: () -> Unit
+    onEditProfileClick: () -> Unit,
+    onHelpClick: () -> Unit
 ) {
     val user by viewModel.user.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
@@ -74,7 +75,7 @@ fun MineScreen(
                 IconButton(onClick = { /* 打开侧边栏 */ }) {
                     Icon(imageVector = Icons.Default.Menu, contentDescription = "Menu")
                 }
-                IconButton(onClick = { /* 打开帮助 */ }) {
+                IconButton(onClick = { onHelpClick() }) {
                     Icon(imageVector = Icons.Default.Build, contentDescription = "Help")
                 }
             },

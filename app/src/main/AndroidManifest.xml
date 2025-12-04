@@ -34,6 +34,9 @@
         <activity
             android:name=".ui.login.AccountActivity"
             android:exported="false" />
+        <activity
+            android:name=".activity.HelperActivity"
+            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

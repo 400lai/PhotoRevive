@@ -57,6 +57,7 @@ fun LoginScreen(
     onExistingAccountClick: () -> Unit,
     onRecoverAccountClick: () -> Unit,
     onLoginClick: () -> Unit = {},
+    onHelpClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var isChecked by remember { mutableStateOf(false) }
@@ -93,7 +94,7 @@ fun LoginScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO: show help dialog */ }) {
+                    IconButton(onClick = { onHelpClick() }) {
                         Icon(imageVector = Icons.Default.Build, contentDescription = "Help")
                     }
                 },

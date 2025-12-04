@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.laiiiii.photorevive.activity.AlbumActivity
+import com.laiiiii.photorevive.activity.HelperActivity
 import com.laiiiii.photorevive.data.local.AppPreferences
 import com.laiiiii.photorevive.data.local.UserDatabase
 import com.laiiiii.photorevive.data.repository.UserRepository
@@ -43,11 +44,14 @@ class MineFragment : Fragment() {
                     },
                     onSubscribeClick = {},
                     onCreateClick = {
-                        // TODO: 跳转到相册页面 AlbumActivity
-                         val intent = Intent(context, AlbumActivity::class.java)
-                         startActivity(intent)
+                        val intent = Intent(context, AlbumActivity::class.java)
+                        startActivity(intent)
                     },
-                    onEditProfileClick = {}
+                    onEditProfileClick = {},
+                    onHelpClick = {
+                        val intent = Intent(context, HelperActivity::class.java)
+                        startActivity(intent)
+                    }
                 )
             }
         }

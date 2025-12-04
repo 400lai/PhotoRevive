@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.laiiiii.photorevive.activity.HelperActivity
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,6 +26,10 @@ class LoginActivity : ComponentActivity() {
             onRecoverAccountClick = {},
             onLoginClick = {  // 添加登录按钮点击回调
                 val intent = Intent(this@LoginActivity, AccountActivity::class.java)
+                startActivity(intent)
+            },
+            onHelpClick = {
+                val intent = Intent(this@LoginActivity, HelperActivity::class.java)
                 startActivity(intent)
             }
         )
