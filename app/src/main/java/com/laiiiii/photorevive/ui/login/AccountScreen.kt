@@ -28,10 +28,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults  // 正确的导入
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-// 删除这行：import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,26 +43,63 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
 
 @Composable
 fun AccountScreen(
     onBack: () -> Unit = {},
-    onLogin: (String, String) -> Unit = { _, _ -> },
+    onLoginSuccess: () -> Unit = {},
     onPhoneLogin: () -> Unit = {},
     onOtherLogin: () -> Unit = {},
     onRegister: () -> Unit = {},
-    onMore: () -> Unit = {}
+    onMore: () -> Unit = {},
+    viewModel: AccountViewModel
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isAgreed by remember { mutableStateOf(false) }
     var usernameError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // 监听登录结果
+    val loginResult by viewModel.loginResult.collectAsState()
+
+    // 处理登录结果
+    when (val result = loginResult) {
+        is AccountViewModel.ResultState.Success -> {
+            // 显示成功消息并调用成功回调
+            androidx.compose.runtime.LaunchedEffect(result) {
+                val snackbarResult = snackbarHostState.showSnackbar(
+                    message = "登录成功",
+                    actionLabel = "确定"
+                )
+                when (snackbarResult) {
+                    SnackbarResult.ActionPerformed,
+                    SnackbarResult.Dismissed -> {
+                        onLoginSuccess()
+                    }
+                }
+            }
+        }
+        is AccountViewModel.ResultState.Error -> {
+            // 显示错误消息
+            androidx.compose.runtime.LaunchedEffect(result) {
+                snackbarHostState.showSnackbar(
+                    message = result.message,
+                    actionLabel = "确定"
+                )
+            }
+        }
+        else -> {
+            // 其他状态不做特殊处理
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -181,7 +222,8 @@ fun AccountScreen(
                     passwordError = password.isBlank()
 
                     if (!usernameError && !passwordError && isAgreed) {
-                        onLogin(username, password)
+                        // 调用viewModel的登录方法
+                        viewModel.login(username, password)
                     }
                 },
                 modifier = Modifier
@@ -245,42 +287,65 @@ fun AccountScreen(
         Spacer(modifier = Modifier.weight(1f))
 
         // 底部快捷按钮
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // 手机号登录
-            BottomActionButton(
-                icon = Icons.Default.Phone,
-                text = "手机号登录",
-                onClick = onPhoneLogin
-            )
+        Box(modifier = Modifier.weight(1f)) {
+            // 底部快捷按钮
+            Column {
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // 手机号登录
+                    BottomActionButton(
+                        icon = Icons.Default.Phone,
+                        text = "手机号登录",
+                        onClick = onPhoneLogin
+                    )
 
-            // 其他方式登录
-            BottomActionButton(
-                icon = Icons.Default.Person,
-                text = "其他方式登录",
-                onClick = onOtherLogin
-            )
+                    // 其他方式登录
+                    BottomActionButton(
+                        icon = Icons.Default.Person,
+                        text = "其他方式登录",
+                        onClick = onOtherLogin
+                    )
 
-            // 注册
-            BottomActionButton(
-                icon = Icons.Default.Add,
-                text = "注册",
-                onClick = onRegister
-            )
+                    // 注册
+                    BottomActionButton(
+                        icon = Icons.Default.Add,
+                        text = "注册",
+                        onClick = onRegister
+                    )
 
-            // 更多
-            BottomActionButton(
-                icon = Icons.Default.MoreVert,
-                text = "更多",
-                onClick = onMore
-            )
+                    // 更多
+                    BottomActionButton(
+                        icon = Icons.Default.MoreVert,
+                        text = "更多",
+                        onClick = onMore
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // 添加 SnackbarHost
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) { snackbarData ->
+                Snackbar(
+                    snackbarData = snackbarData,
+                    shape = RoundedCornerShape(12.dp),
+                    containerColor = if (snackbarData.visuals.message == "登录成功") {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                    contentColor = Color.White,
+                    actionColor = Color.White
+                )
+            }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -324,10 +389,4 @@ fun BottomActionButton(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun AccountScreenPreview() {
-    MaterialTheme {
-        AccountScreen()
-    }
-}
+

@@ -216,9 +216,24 @@ fun LoginScreen(
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = "已阅读并同意 用户协议 和 隐私协议",
+                        text = "已阅读并同意",
                         fontSize = 14.sp,
                         color = Color.Gray
+                    )
+                    Text(
+                        text = " 用户协议",
+                        fontSize = 14.sp,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = " 和 ",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "隐私协议",
+                        fontSize = 14.sp,
+                        color = Color.Black
                     )
                 }
 
