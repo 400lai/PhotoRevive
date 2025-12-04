@@ -3,6 +3,10 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     kotlin("kapt")
+
+    //  应用自定义插件
+    alias(libs.plugins.photorevive.build.analysis)
+
 }
 
 android {
