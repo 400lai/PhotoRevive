@@ -16,9 +16,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -42,6 +46,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,15 +56,35 @@ fun LoginScreen(
     onAgreeChange: (Boolean) -> Unit,
     onExistingAccountClick: () -> Unit,
     onRecoverAccountClick: () -> Unit,
+    onLoginClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier
-        .fillMaxSize()) {
+    var isChecked by remember { mutableStateOf(false) }
+    var showAgreementDialog by remember { mutableStateOf(false) }
+
+    // 处理点击新用户/登录按钮逻辑
+    val handleNewUserClick = {
+        if (!isChecked) {
+            showAgreementDialog = true
+        } else {
+            // TODO: 新用户注册逻辑
+        }
+    }
+
+    val handleLoginClick = {
+        if (!isChecked) {
+            showAgreementDialog = true
+        } else {
+            onLoginClick()
+            // TODO: 登录逻辑
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Top Bar - Close and Help
             TopAppBar(
                 title = { },
                 navigationIcon = {
@@ -78,7 +104,6 @@ fun LoginScreen(
                 )
             )
 
-            // 主要内容区域 - 垂直居中
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -86,7 +111,6 @@ fun LoginScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Logo
                 Box(
                     modifier = Modifier
                         .size(100.dp)
@@ -113,40 +137,71 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(160.dp))
 
-                // TikTok Login Button
-                OutlinedButton(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                    onClick = { /* TODO: login with TikTok */ }
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                    OutlinedButton(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Green),
+                        onClick = handleNewUserClick
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "TikTok",
-                            modifier = Modifier.size(24.dp),
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "通过抖音登录",
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddCircle,
+                                contentDescription = "New User",
+                                modifier = Modifier.size(24.dp),
+                                tint = Color.Black
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "新用户",
+                                color = Color.Black,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedButton(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                        onClick = handleLoginClick
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Login",
+                                modifier = Modifier.size(24.dp),
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "登录",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-
-                // Agreement Checkbox
-                var isChecked by remember { mutableStateOf(false) }
 
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -169,7 +224,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(120.dp))
 
-                // Existing Account or Recovery
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.Center
@@ -203,10 +257,50 @@ fun LoginScreen(
                 )
             }
         }
+
+        // 协议弹窗
+        if (showAgreementDialog) {
+            AlertDialog(
+                onDismissRequest = { showAgreementDialog = false },
+                title = { Text("用户协议及隐私政策") },
+                text = {
+                    Text(
+                        text = "已阅读并同意 用户协议 和 隐私协议，\n同时登录并使用醒图和抖音，运营商将对你提供的手机号进行验证",
+                        color = Color.Gray,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showAgreementDialog = false
+                            isChecked = true
+                            onAgreeChange(true)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                    ) {
+                        Text("同意并登录", color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAgreementDialog = false }) {
+                        Text("不同意")
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                properties = DialogProperties(
+                    dismissOnClickOutside = false
+                )
+            )
+        }
     }
 }
 
-
+// Preview
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
