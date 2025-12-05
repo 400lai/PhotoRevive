@@ -56,7 +56,6 @@ class MineFragment : Fragment() {
             }
         }
 
-
         return composeView
     }
 }
