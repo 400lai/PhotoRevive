@@ -8,11 +8,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.laiiiii.photorevive.ui.editor.model.TransformState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.OutputStream
-import com.laiiiii.photorevive.ui.editor.model.TransformState
 
 class EditorViewModel(application: Application) : AndroidViewModel(application) {
     private val _editorState = MutableLiveData<EditorState>()
@@ -36,13 +36,22 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     /**
      * 导出图像到相册
      */
-    fun exportImage(bitmap: Bitmap) {
+    fun exportImage(bitmap: Bitmap, cropRect: android.graphics.RectF) {
         viewModelScope.launch {
             _exportState.value = ExportState.Loading
 
             try {
+                // 裁剪子图
+                val cropped = Bitmap.createBitmap(
+                    bitmap,
+                    cropRect.left.toInt().coerceAtLeast(0),
+                    cropRect.top.toInt().coerceAtLeast(0),
+                    cropRect.width().toInt().coerceAtMost(bitmap.width - cropRect.left.toInt()),
+                    cropRect.height().toInt().coerceAtMost(bitmap.height - cropRect.top.toInt())
+                )
+
                 val uri = withContext(Dispatchers.IO) {
-                    saveImageToGallery(bitmap)
+                    saveImageToGallery(cropped)
                 }
 
                 if (uri != null) {
@@ -51,7 +60,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                     _exportState.value = ExportState.Error("保存失败")
                 }
             } catch (e: Exception) {
-                _exportState.value = ExportState.Error(e.message ?: "未知错误")
+                _exportState.value = ExportState.Error(e.message ?: "裁剪或保存失败")
             }
         }
     }

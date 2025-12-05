@@ -19,8 +19,8 @@
         <!-- 关闭按钮 -->
         <Button
             android:id="@+id/btn_close"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="@android:drawable/ic_menu_close_clear_cancel"
             app:backgroundTint="@android:color/white"
             android:contentDescription="关闭"
@@ -29,8 +29,8 @@
         <!-- 帮助按钮 -->
         <Button
             android:id="@+id/btn_help"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="@android:drawable/ic_menu_help"
             app:backgroundTint="@android:color/white"
             android:contentDescription="帮助"
@@ -88,6 +88,47 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- 新增的 Undo/Redo 和重置按钮 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="2dp"
+            android:background="#111">
+
+            <!-- Undo 按钮（使用系统向左箭头） -->
+            <ImageButton
+                android:id="@+id/btn_undo"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/actionModeCloseDrawable"
+                android:contentDescription="撤销"
+                android:layout_marginEnd="16dp" />
+
+            <!-- Redo 按钮（使用系统向右箭头） -->
+            <ImageButton
+                android:id="@+id/btn_redo"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/actionModeCloseDrawable"
+                android:contentDescription="重做"
+                android:layout_marginEnd="16dp"
+                android:rotation="180" />
+
+            <!-- 重置按钮（居中） -->
+            <Button
+                android:id="@+id/btn_reset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="重置"
+                android:textSize="12sp"
+                android:textColor="#FFF"
+                android:background="@drawable/bg_rounded_dark"
+                android:padding="8dp" />
+        </LinearLayout>
+
+
         <!-- 功能标签栏 -->
         <HorizontalScrollView
             android:layout_width="match_parent"
@@ -116,7 +157,7 @@
                     android:id="@+id/tab_template"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="模板"
+                    android:text="裁剪"
                     android:textSize="12sp"
                     android:textColor="#FF0"
                     android:layout_margin="8dp"
@@ -174,49 +215,98 @@
             </LinearLayout>
         </HorizontalScrollView>
 
-        <!-- 模板预览区（可选） -->
-        <LinearLayout
+        <!-- 裁剪比例选项区 -->
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:padding="8dp"
-            android:background="#111">
+            android:background="#111"
+            android:scrollbars="none">
 
-            <ImageView
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:scaleType="centerCrop"
-                android:layout_margin="4dp"
-                android:background="@drawable/bg_rounded_dark"/>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
 
-            <ImageView
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:scaleType="centerCrop"
-                android:layout_margin="4dp"
-                android:background="@drawable/bg_rounded_dark"/>
+                <!-- 自由裁剪按钮（默认选中） -->
+                <Button
+                    android:id="@+id/btn_free"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="自由"
+                    android:textSize="12sp"
+                    android:textColor="#FFF"
+                    android:background="@drawable/bg_rounded_selected"
+                    android:padding="8dp"
+                    android:layout_marginEnd="4dp" />
 
-            <ImageView
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:scaleType="centerCrop"
-                android:layout_margin="4dp"
-                android:background="@drawable/bg_rounded_dark"/>
+                <!-- 其他裁剪比例按钮 -->
+                <Button
+                    android:id="@+id/btn_original"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="原始"
+                    android:textSize="12sp"
+                    android:textColor="#FFF"
+                    android:background="@drawable/bg_rounded_dark"
+                    android:padding="8dp"
+                    android:layout_marginEnd="4dp" />
 
-            <ImageView
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:scaleType="centerCrop"
-                android:layout_margin="4dp"
-                android:background="@drawable/bg_rounded_dark"/>
+                <Button
+                    android:id="@+id/btn_1_1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1:1"
+                    android:textSize="12sp"
+                    android:textColor="#FFF"
+                    android:background="@drawable/bg_rounded_dark"
+                    android:padding="8dp"
+                    android:layout_marginEnd="4dp" />
 
-            <ImageView
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:scaleType="centerCrop"
-                android:layout_margin="4dp"
-                android:background="@drawable/bg_rounded_dark"/>
-        </LinearLayout>
+                <Button
+                    android:id="@+id/btn_3_4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3:4"
+                    android:textSize="12sp"
+                    android:textColor="#FFF"
+                    android:background="@drawable/bg_rounded_dark"
+                    android:padding="8dp"
+                    android:layout_marginEnd="4dp" />
+
+                <Button
+                    android:id="@+id/btn_4_3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="4:3"
+                    android:textSize="12sp"
+                    android:textColor="#FFF"
+                    android:background="@drawable/bg_rounded_dark"
+                    android:padding="8dp"
+                    android:layout_marginEnd="4dp" />
+
+                <Button
+                    android:id="@+id/btn_9_16"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="9:16"
+                    android:textSize="12sp"
+                    android:textColor="#FFF"
+                    android:background="@drawable/bg_rounded_dark"
+                    android:padding="8dp"
+                    android:layout_marginEnd="4dp" />
+
+                <Button
+                    android:id="@+id/btn_16_9"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="16:9"
+                    android:textSize="12sp"
+                    android:textColor="#FFF"
+                    android:background="@drawable/bg_rounded_dark"
+                    android:padding="8dp" />
+            </LinearLayout>
+        </HorizontalScrollView>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

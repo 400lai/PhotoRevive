@@ -1,24 +1,27 @@
-// ui/editor/ImageRenderer.kt
 package com.laiiiii.photorevive.ui.editor
 
 import android.graphics.Bitmap
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
-import android.util.Log
+import com.laiiiii.photorevive.ui.editor.model.TransformState
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
-import com.laiiiii.photorevive.ui.editor.model.TransformState
 
 class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
     private var program = 0
+    private var cropProgram = 0 // 专门用于绘制裁剪框
     private var textureId = -1
     private lateinit var vertexBuffer: FloatBuffer
     private lateinit var textureBuffer: FloatBuffer
-    private var displayVertices = FloatArray(8) // 用于存储调整后的顶点坐标
+    private lateinit var cropVertexBuffer: FloatBuffer
+    private var displayVertices = FloatArray(8)
+
+    // 裁剪框归一化坐标 (x1, y1, x2, y2 in [-1,1])
+    private var cropBoxNormalized = floatArrayOf(-1f, 1f, 1f, -1f) // 默认全屏
 
     private val vertexShaderCode = """
         attribute vec4 aPosition;
@@ -39,23 +42,35 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
         }
     """.trimIndent()
 
-    // 顶点坐标 (x, y)
+    // 裁剪框着色器（纯色线框）
+    private val cropVertexShader = """
+        attribute vec2 aPosition;
+        void main() {
+            gl_Position = vec4(aPosition, 0.0, 1.0);
+        }
+    """.trimIndent()
+
+    private val cropFragmentShader = """
+        precision mediump float;
+        void main() {
+            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); // 白色
+        }
+    """.trimIndent()
+
     private val vertices = floatArrayOf(
-        -1f, 1f,   // 左上
-        -1f, -1f,  // 左下
-        1f, 1f,    // 右上
-        1f, -1f    // 右下
+        -1f, 1f,
+        -1f, -1f,
+        1f, 1f,
+        1f, -1f
     )
 
-    // 纹理坐标 (s, t)
     private val textureCoords = floatArrayOf(
-        0f, 0f,  // 左上
-        0f, 1f,  // 左下
-        1f, 0f,  // 右上
-        1f, 1f   // 右下
+        0f, 0f,
+        0f, 1f,
+        1f, 0f,
+        1f, 1f
     )
 
-    // 变换状态
     private var transformState = TransformState.DEFAULT
     private var viewWidth = 0
     private var viewHeight = 0
@@ -64,249 +79,176 @@ class ImageRenderer(private val bitmap: Bitmap) : GLSurfaceView.Renderer {
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
 
-        // 初始化默认顶点缓冲区
-        vertexBuffer = ByteBuffer.allocateDirect(vertices.size * 4)
-            .order(ByteOrder.nativeOrder())
-            .asFloatBuffer()
-            .apply {
-                put(vertices)
-                position(0)
-            }
+        vertexBuffer = allocateFloatBuffer(vertices)
+        textureBuffer = allocateFloatBuffer(textureCoords)
 
-        textureBuffer = ByteBuffer.allocateDirect(textureCoords.size * 4)
-            .order(ByteOrder.nativeOrder())
-            .asFloatBuffer()
-            .apply {
-                put(textureCoords)
-                position(0)
-            }
-
-        // 创建着色器程序
         program = createProgram(vertexShaderCode, fragmentShaderCode)
-        if (program == 0) {
-            Log.e("ImageRenderer", "Failed to create program")
-            return
-        }
+        cropProgram = createProgram(cropVertexShader, cropFragmentShader)
 
-        // 加载纹理
         textureId = loadTexture(bitmap)
-        if (textureId == -1) {
-            Log.e("ImageRenderer", "Failed to load texture")
-            return
-        }
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
-
         viewWidth = width
         viewHeight = height
 
-        // 计算centerInside效果的初始缩放
-        val bitmapWidth = bitmap.width.toFloat()
-        val bitmapHeight = bitmap.height.toFloat()
-        val widthScale = viewWidth.toFloat() / bitmapWidth
-        val heightScale = viewHeight.toFloat() / bitmapHeight
-        initialScale = minOf(widthScale, heightScale, 1.0f)
+        val bitmapW = bitmap.width.toFloat()
+        val bitmapH = bitmap.height.toFloat()
+        val wScale = width / bitmapW
+        val hScale = height / bitmapH
+        initialScale = minOf(wScale, hScale, 1.0f)
 
-        // 计算centerInside效果的顶点坐标
         calculateCenterInsideVertices(width, height)
-
-        // 更新顶点缓冲区
-        vertexBuffer.clear()
         vertexBuffer.put(displayVertices)
         vertexBuffer.position(0)
-    }
 
-    override fun onDrawFrame(gl: GL10?) {
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
-
-        if (program == 0) {
-            Log.e("ImageRenderer", "Program is not valid")
-            return
-        }
-
-        GLES20.glUseProgram(program)
-
-        // 设置顶点属性
-        val positionHandle = GLES20.glGetAttribLocation(program, "aPosition")
-        if (positionHandle == -1) {
-            Log.e("ImageRenderer", "Failed to get attribute location for aPosition")
-            return
-        }
-        GLES20.glEnableVertexAttribArray(positionHandle)
-        GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 0, vertexBuffer)
-
-        // 设置纹理坐标属性
-        val texCoordHandle = GLES20.glGetAttribLocation(program, "aTexCoord")
-        if (texCoordHandle == -1) {
-            Log.e("ImageRenderer", "Failed to get attribute location for aTexCoord")
-            return
-        }
-        GLES20.glEnableVertexAttribArray(texCoordHandle)
-        GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, 0, textureBuffer)
-
-        // 绑定纹理
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
-        val textureHandle = GLES20.glGetUniformLocation(program, "uTexture")
-        if (textureHandle != -1) {
-            GLES20.glUniform1i(textureHandle, 0)
-        }
-
-        // 绘制两个三角形形成矩形
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
-
-        GLES20.glDisableVertexAttribArray(positionHandle)
-        GLES20.glDisableVertexAttribArray(texCoordHandle)
-    }
-
-    fun updateTransform(transformState: TransformState) {
-        this.transformState = transformState
-        // 根据 transformState 更新顶点坐标实现平移和缩放
-        updateVerticesWithTransform()
-    }
-
-    private fun updateVerticesWithTransform() {
-        val bitmapWidth = bitmap.width.toFloat()
-        val bitmapHeight = bitmap.height.toFloat()
-
-        // 计算当前缩放因子
-        val currentScaleX = initialScale * transformState.scaleX
-        val currentScaleY = initialScale * transformState.scaleY
-
-        // 计算实际显示尺寸
-        val displayWidth = bitmapWidth * currentScaleX
-        val displayHeight = bitmapHeight * currentScaleY
-
-        // 计算在标准化设备坐标系中的位置(-1 to 1)
-        val normalizedWidth = displayWidth / viewWidth
-        val normalizedHeight = displayHeight / viewHeight
-
-        // 计算平移偏移 (将像素偏移转换为标准化设备坐标)
-        val translateXNormalized = (transformState.translateX * 2.0f) / viewWidth
-        val translateYNormalized = (transformState.translateY * 2.0f) / viewHeight
-
-        // 更新顶点坐标数组，应用平移和缩放
-        displayVertices = floatArrayOf(
-            -normalizedWidth + translateXNormalized, normalizedHeight - translateYNormalized,   // 左上
-            -normalizedWidth + translateXNormalized, -normalizedHeight - translateYNormalized,  // 左下
-            normalizedWidth + translateXNormalized, normalizedHeight - translateYNormalized,    // 右上
-            normalizedWidth + translateXNormalized, -normalizedHeight - translateYNormalized    // 右下
-        )
-
-        // 更新顶点缓冲区
-        vertexBuffer.clear()
-        vertexBuffer.put(displayVertices)
-        vertexBuffer.position(0)
-    }
-
-    private fun calculateCenterInsideVertices(viewWidth: Int, viewHeight: Int) {
-        val bitmapWidth = bitmap.width.toFloat()
-        val bitmapHeight = bitmap.height.toFloat()
-
-        // 如果图片尺寸小于等于视图尺寸，则保持原大小居中显示
-        // 如果图片尺寸大于视图尺寸，则按比例缩小以完整显示
-        val widthScale = viewWidth.toFloat() / bitmapWidth
-        val heightScale = viewHeight.toFloat() / bitmapHeight
-
-        // 选择较小的缩放因子以确保整个图片都能显示在视图内
-        val scale = minOf(widthScale, heightScale, 1.0f)
-
-        // 计算实际显示尺寸
-        val displayWidth = bitmapWidth * scale
-        val displayHeight = bitmapHeight * scale
-
-        // 计算在标准化设备坐标系中的位置(-1 to 1)
-        val normalizedWidth = displayWidth / viewWidth
-        val normalizedHeight = displayHeight / viewHeight
-
-        // 更新顶点坐标数组以实现centerInside效果
-        displayVertices = floatArrayOf(
-            -normalizedWidth, normalizedHeight,   // 左上
-            -normalizedWidth, -normalizedHeight,  // 左下
-            normalizedWidth, normalizedHeight,    // 右上
-            normalizedWidth, -normalizedHeight    // 右下
-        )
-    }
-
-    private fun loadShader(type: Int, shaderCode: String): Int {
-        val shader = GLES20.glCreateShader(type)
-        if (shader == 0) {
-            Log.e("ImageRenderer", "Failed to create shader")
-            return 0
-        }
-
-        GLES20.glShaderSource(shader, shaderCode)
-        GLES20.glCompileShader(shader)
-
-        // 检查编译状态
-        val compileStatus = IntArray(1)
-        GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0)
-        if (compileStatus[0] == 0) {
-            val infoLog = GLES20.glGetShaderInfoLog(shader)
-            Log.e("ImageRenderer", "Shader compilation failed: $infoLog")
-            Log.e("ImageRenderer", "Shader source:\n$shaderCode")
-            GLES20.glDeleteShader(shader)
-            return 0
-        }
-
-        return shader
+        // 初始化裁剪框为全图（归一化）
+        updateCropBoxFromRectF(0f, 0f, width.toFloat(), height.toFloat())
     }
 
     private fun createProgram(vertexSource: String, fragmentSource: String): Int {
         val vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexSource)
-        if (vertexShader == 0) return 0
-
         val fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentSource)
-        if (fragmentShader == 0) return 0
 
         val program = GLES20.glCreateProgram()
         GLES20.glAttachShader(program, vertexShader)
         GLES20.glAttachShader(program, fragmentShader)
         GLES20.glLinkProgram(program)
 
-        // 检查链接状态
-        val linkStatus = IntArray(1)
-        GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linkStatus, 0)
-        if (linkStatus[0] == 0) {
-            val infoLog = GLES20.glGetProgramInfoLog(program)
-            Log.e("ImageRenderer", "Program linking failed: $infoLog")
-            GLES20.glDeleteProgram(program)
-            return 0
-        }
-
-        // 删除着色器对象因为我们已经链接到程序中了
-        GLES20.glDeleteShader(vertexShader)
-        GLES20.glDeleteShader(fragmentShader)
-
         return program
     }
 
+    private fun loadShader(type: Int, shaderCode: String): Int {
+        val shader = GLES20.glCreateShader(type)
+        GLES20.glShaderSource(shader, shaderCode)
+        GLES20.glCompileShader(shader)
+        return shader
+    }
+
+    // 替换掉原来的 loadTexture(bitmap) 调用
     private fun loadTexture(bitmap: Bitmap): Int {
         val textures = IntArray(1)
         GLES20.glGenTextures(1, textures, 0)
         val textureId = textures[0]
 
-        if (textureId == 0) {
-            Log.e("ImageRenderer", "Failed to generate texture")
-            return -1
-        }
-
-        // 在设置纹理参数之前先绑定纹理
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
-
-        // 设置纹理参数
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
-
-        // 加载纹理
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
-        // 注意：这里不应该回收bitmap，因为它会在后续渲染中使用
-        // bitmap.recycle()
 
         return textureId
     }
+
+
+    override fun onDrawFrame(gl: GL10?) {
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+
+        // 绘制图片
+        if (program != 0 && textureId != -1) {
+            GLES20.glUseProgram(program)
+            bindAttributesAndTexture()
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        }
+
+        // 绘制裁剪框（线框）
+        if (cropProgram != 0) {
+            GLES20.glUseProgram(cropProgram)
+            val posHandle = GLES20.glGetAttribLocation(cropProgram, "aPosition")
+            GLES20.glEnableVertexAttribArray(posHandle)
+            GLES20.glVertexAttribPointer(posHandle, 2, GLES20.GL_FLOAT, false, 0, cropVertexBuffer)
+
+            GLES20.glLineWidth(3.0f)
+            GLES20.glDrawArrays(GLES20.GL_LINE_LOOP, 0, 4)
+
+            GLES20.glDisableVertexAttribArray(posHandle)
+        }
+    }
+
+    private fun bindAttributesAndTexture() {
+        val pos = GLES20.glGetAttribLocation(program, "aPosition")
+        GLES20.glEnableVertexAttribArray(pos)
+        GLES20.glVertexAttribPointer(pos, 2, GLES20.GL_FLOAT, false, 0, vertexBuffer)
+
+        val tex = GLES20.glGetAttribLocation(program, "aTexCoord")
+        GLES20.glEnableVertexAttribArray(tex)
+        GLES20.glVertexAttribPointer(tex, 2, GLES20.GL_FLOAT, false, 0, textureBuffer)
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
+        val uTex = GLES20.glGetUniformLocation(program, "uTexture")
+        GLES20.glUniform1i(uTex, 0)
+    }
+
+    fun updateTransform(transformState: TransformState) {
+        this.transformState = transformState
+        updateVerticesWithTransform()
+    }
+
+    fun setCropBox(viewRect: android.graphics.RectF) {
+        updateCropBoxFromRectF(viewRect.left, viewRect.top, viewRect.right, viewRect.bottom)
+    }
+
+    private fun updateCropBoxFromRectF(left: Float, top: Float, right: Float, bottom: Float) {
+        if (viewWidth == 0 || viewHeight == 0) return // 防止除零
+
+        val x1 = (left / viewWidth) * 2 - 1
+        val y1 = 1 - (top / viewHeight) * 2
+        val x2 = (right / viewWidth) * 2 - 1
+        val y2 = 1 - (bottom / viewHeight) * 2
+
+        cropBoxNormalized = floatArrayOf(
+            x1, y1,
+            x1, y2,
+            x2, y2,
+            x2, y1
+        )
+        cropVertexBuffer = allocateFloatBuffer(cropBoxNormalized)
+    }
+
+    private fun updateVerticesWithTransform() {
+        val bw = bitmap.width.toFloat()
+        val bh = bitmap.height.toFloat()
+        val sx = initialScale * transformState.scaleX
+        val sy = initialScale * transformState.scaleY
+        val dw = bw * sx
+        val dh = bh * sy
+        val nw = dw / viewWidth
+        val nh = dh / viewHeight
+        val tx = (transformState.translateX * 2f) / viewWidth
+        val ty = (transformState.translateY * 2f) / viewHeight
+
+        displayVertices = floatArrayOf(
+            -nw + tx, nh - ty,
+            -nw + tx, -nh - ty,
+            nw + tx, nh - ty,
+            nw + tx, -nh - ty
+        )
+        vertexBuffer.put(displayVertices)
+        vertexBuffer.position(0)
+    }
+
+    private fun calculateCenterInsideVertices(viewWidth: Int, viewHeight: Int) {
+        val bw = bitmap.width.toFloat()
+        val bh = bitmap.height.toFloat()
+        val scale = minOf(viewWidth / bw, viewHeight / bh, 1.0f)
+        val dw = bw * scale
+        val dh = bh * scale
+        val nw = dw / viewWidth
+        val nh = dh / viewHeight
+        displayVertices = floatArrayOf(
+            -nw, nh,
+            -nw, -nh,
+            nw, nh,
+            nw, -nh
+        )
+    }
+
+    private fun allocateFloatBuffer(arr: FloatArray): FloatBuffer =
+        ByteBuffer.allocateDirect(arr.size * 4)
+            .order(ByteOrder.nativeOrder())
+            .asFloatBuffer()
+            .apply { put(arr).position(0) }
+
+    // ... (保留原有 loadShader, createProgram, loadTexture)
 }
