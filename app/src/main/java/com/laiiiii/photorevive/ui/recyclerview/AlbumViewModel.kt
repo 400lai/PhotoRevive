@@ -23,4 +23,9 @@ class AlbumViewModel(application: Application) : AndroidViewModel(application) {
             Trace.endSection() // ViewModelLoadMedia 加载完成
         }
     }
+
+    // 添加一个刷新方法，强制重新加载媒体数据
+    fun refreshMedia() {
+        loadMedia()
+    }
 }

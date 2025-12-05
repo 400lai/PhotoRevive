@@ -1,9 +1,11 @@
-// ui/editor/EditorViewModel.kt
 package com.laiiiii.photorevive.ui.editor
 
 import android.app.Application
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -72,27 +74,46 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         return withContext(Dispatchers.IO) {
             try {
                 val context = getApplication<Application>().applicationContext
+                val displayName = "photo_revive_${System.currentTimeMillis()}.jpg"
+
+                // 使用更完整的 ContentValues
                 val contentValues = android.content.ContentValues().apply {
-                    put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "photo_revive_${System.currentTimeMillis()}.jpg")
-                    put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                        put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES)
+                    put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                    put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000)
+                    put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis())
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
                     }
                 }
 
                 val resolver = context.contentResolver
-                val uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
 
                 uri?.let { imageUri ->
                     var outputStream: OutputStream? = null
                     try {
                         outputStream = resolver.openOutputStream(imageUri)
-                        // 修复点：使用安全调用避免 NullPointerException，并判断是否成功压缩
                         val success = outputStream?.let { stream ->
                             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
                         } ?: false
 
                         if (success) {
+                            // 强制通知媒体扫描
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                                // 对于 Android Q 以下版本，使用 MediaScannerConnection
+                                android.media.MediaScannerConnection.scanFile(
+                                    context,
+                                    arrayOf(imageUri.toString()),
+                                    arrayOf("image/jpeg")
+                                ) { path, uri ->
+                                    // 扫描完成回调
+                                }
+                            } else {
+                                // Android Q 及以上版本，插入时就已经触发扫描
+                            }
+
                             imageUri
                         } else {
                             resolver.delete(imageUri, null, null)

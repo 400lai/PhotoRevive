@@ -46,6 +46,16 @@ class AlbumActivity : AppCompatActivity() {
             adapter.updateItems(items)
         }
 
+        loadData()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 每次恢复时刷新媒体数据
+        loadData()
+    }
+
+    private fun loadData() {
         // 权限检查与加载
         if (PermissionUtil.hasStoragePermission(this)) {
             viewModel.loadMedia()

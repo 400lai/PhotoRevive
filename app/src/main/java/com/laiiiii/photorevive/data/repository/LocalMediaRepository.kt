@@ -14,10 +14,11 @@ object LocalMediaRepository {
         val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
             MediaStore.Images.Media._ID,
-            MediaStore.Images.Media.MIME_TYPE
+            MediaStore.Images.Media.MIME_TYPE,
+            MediaStore.Images.Media.DATE_ADDED  // 添加日期字段用于排序
         )
-        // 按拍摄时间倒序，再按 ID 倒序（避免 DATE_TAKEN=0 的图片乱序）
-        val sortOrder = "${MediaStore.Images.Media.DATE_TAKEN} DESC, ${MediaStore.Images.Media._ID} DESC"
+        // 按添加时间倒序排列，确保最新添加的图片排在前面
+        val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
 
         Trace.beginSection("LoadImagesQuery")
         val items = mutableListOf<MediaItem>()
