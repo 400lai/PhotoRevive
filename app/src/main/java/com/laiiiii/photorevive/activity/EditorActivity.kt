@@ -17,14 +17,14 @@ import com.laiiiii.photorevive.ui.editor.EditorHistoryManager
 import com.laiiiii.photorevive.ui.editor.EditorTouchListener
 import com.laiiiii.photorevive.ui.editor.EditorViewModel
 import com.laiiiii.photorevive.ui.editor.ExportState
-import com.laiiiii.photorevive.ui.editor.ImageRenderer
+import com.laiiiii.photorevive.ui.editor.gl.GlRenderer
 import com.laiiiii.photorevive.ui.editor.model.TransformState
 
 class EditorActivity : AppCompatActivity() {
     private lateinit var binding: ActivityEditorBinding
     private lateinit var viewModel: EditorViewModel
     private var currentBitmap: Bitmap? = null
-    private var imageRenderer: ImageRenderer? = null
+    private var imageRenderer: GlRenderer? = null
     private lateinit var touchListener: EditorTouchListener
     private val historyManager = EditorHistoryManager()
     private var currentCropState = CropState(isActive = true)
@@ -127,18 +127,22 @@ class EditorActivity : AppCompatActivity() {
         binding.btnReset.setOnClickListener {
             val defaultTransform = TransformState.DEFAULT
             imageRenderer?.updateTransform(defaultTransform)
-            currentCropState = currentCropState.copy(
-                aspectRatio = null,
-                cropRect = CropManager.calculateInitialCropRect(
-                    binding.glSurfaceView.width,
-                    binding.glSurfaceView.height,
-                    currentBitmap?.width ?: 1,
-                    currentBitmap?.height ?: 1
+
+            // 重新计算初始裁剪框
+            if (binding.glSurfaceView.width > 0 && binding.glSurfaceView.height > 0 && currentBitmap != null) {
+                currentCropState = currentCropState.copy(
+                    aspectRatio = null,
+                    cropRect = CropManager.calculateInitialCropRect(
+                        binding.glSurfaceView.width,
+                        binding.glSurfaceView.height,
+                        currentBitmap!!.width,
+                        currentBitmap!!.height
+                    )
                 )
-            )
-            imageRenderer?.setCropBox(currentCropState.cropRect)
-            historyManager.saveSnapshot(defaultTransform, currentCropState)
-            binding.glSurfaceView.requestRender()
+                imageRenderer?.setCropBox(currentCropState.cropRect)
+                historyManager.saveSnapshot(defaultTransform, currentCropState)
+                binding.glSurfaceView.requestRender()
+            }
         }
 
         // 裁剪比例按钮
@@ -157,22 +161,28 @@ class EditorActivity : AppCompatActivity() {
 
     private fun setupRenderer() {
         currentBitmap?.let { bitmap ->
-            val initialCrop = CropManager.calculateInitialCropRect(
-                binding.glSurfaceView.width,
-                binding.glSurfaceView.height,
-                bitmap.width,
-                bitmap.height
-            )
-            currentCropState = CropState(isActive = true, aspectRatio = null, cropRect = initialCrop)
-
-            imageRenderer = ImageRenderer(bitmap)
-            imageRenderer?.setCropBox(initialCrop)
+            imageRenderer = GlRenderer(this, bitmap)
             binding.glSurfaceView.setRenderer(imageRenderer)
             binding.glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
 
-            initGestureDetectors()
+            // 等待 GLSurfaceView 完成布局后再初始化裁剪框
+            binding.glSurfaceView.post {
+                if (binding.glSurfaceView.width > 0 && binding.glSurfaceView.height > 0) {
+                    val initialCrop = CropManager.calculateInitialCropRect(
+                        binding.glSurfaceView.width,
+                        binding.glSurfaceView.height,
+                        bitmap.width,
+                        bitmap.height
+                    )
+                    currentCropState = CropState(isActive = true, aspectRatio = null, cropRect = initialCrop)
 
-            historyManager.saveSnapshot(TransformState.DEFAULT, currentCropState)
+                    imageRenderer?.setCropBox(initialCrop)
+                    historyManager.saveSnapshot(TransformState.DEFAULT, currentCropState)
+                    binding.glSurfaceView.requestRender()
+                }
+            }
+
+            initGestureDetectors()
         }
     }
 

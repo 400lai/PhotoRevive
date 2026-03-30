@@ -4,7 +4,6 @@ package com.laiiiii.photorevive.ui.editor
 import android.content.Context
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
-import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 
 class GLSurfaceView @JvmOverloads constructor(

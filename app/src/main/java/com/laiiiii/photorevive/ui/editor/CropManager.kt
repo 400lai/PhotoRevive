@@ -13,10 +13,15 @@ object CropManager {
     private const val EPSILON = 0.001f
 
     fun calculateInitialCropRect(viewWidth: Int, viewHeight: Int, bitmapWidth: Int, bitmapHeight: Int): RectF {
-        // 初始裁剪为整个视图尺寸（对应 bitmap 的显示区域）
-        // 但注意：cropRect 是基于 **view 坐标系** 的，不是 bitmap 像素坐标！
-        // 所以应返回 [0, 0, viewWidth, viewHeight]
-        return RectF(0f, 0f, viewWidth.toFloat(), viewHeight.toFloat())
+        // 计算图像在 view 中的实际显示区域（保持宽高比居中显示）
+        val scale = minOf(viewWidth / bitmapWidth.toFloat(), viewHeight / bitmapHeight.toFloat(), 1.0f)
+        val displayedW = bitmapWidth * scale
+        val displayedH = bitmapHeight * scale
+        val offsetX = (viewWidth - displayedW) / 2f
+        val offsetY = (viewHeight - displayedH) / 2f
+
+        // 返回图像的实际显示区域作为初始裁剪框
+        return RectF(offsetX, offsetY, offsetX + displayedW, offsetY + displayedH)
     }
 
     fun applyAspectRatio(cropRect: RectF, aspectRatio: Float?, viewWidth: Int, viewHeight: Int): RectF {
